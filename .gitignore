@@ -1,0 +1,29 @@
+# Environment and secrets
+.env
+rag-app/.env
+*.env
+
+# Python virtual environment
+.venv/
+rag-app/.venv/
+env/
+venv/
+
+# Python cache
+__pycache__/
+rag-app/__pycache__/
+*.pyc
+
+# Local Chroma vector database
+chroma_db/
+rag-app/chroma_db/
+
+# Uploaded documents (keep folder structure via .gitkeep)
+uploads/*
+!uploads/.gitkeep
+rag-app/uploads/*
+!rag-app/uploads/.gitkeep
+
+# OS generated files
+.DS_Store
+Thumbs.db

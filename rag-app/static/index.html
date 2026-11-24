@@ -1,0 +1,771 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DocuMind — Document Retrieval Console</title>
+  <style>
+    :root {
+      --bg: #0f1115;
+      --sidebar: #16181d;
+      --card: #1c1f26;
+      --card-hover: #222630;
+      --border: #282c37;
+      --border-focus: #495063;
+      --text-main: #f0f2f5;
+      --text-dim: #9da3af;
+      --text-subtle: #5f6674;
+      --accent: #22c55e;
+      --accent-dim: rgba(34, 197, 94, 0.12);
+      --primary: #e2e8f0;
+      --primary-btn: #2d3342;
+      --primary-btn-hover: #3b4255;
+      --danger: #f87171;
+      --danger-dim: rgba(248, 113, 113, 0.12);
+      --font-mono: "JetBrains Mono", SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text-main);
+      font-family: var(--font-sans);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Top Navigation Bar */
+    header {
+      background-color: var(--sidebar);
+      border-bottom: 1px solid var(--border);
+      padding: 0.85rem 1.75rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .brand-icon {
+      width: 24px;
+      height: 24px;
+      background: linear-gradient(135deg, #38bdf8, #818cf8);
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: #0f1115;
+    }
+
+    .brand-title {
+      font-size: 0.95rem;
+      font-weight: 600;
+      letter-spacing: -0.01em;
+      color: var(--text-main);
+    }
+
+    .brand-version {
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      color: var(--text-subtle);
+      background: var(--border);
+      padding: 0.15rem 0.4rem;
+      border-radius: 4px;
+    }
+
+    .header-status {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.8rem;
+      color: var(--text-dim);
+      font-family: var(--font-mono);
+    }
+
+    .status-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background-color: var(--accent);
+      box-shadow: 0 0 8px rgba(34, 197, 94, 0.6);
+    }
+
+    /* Main Workspace Layout */
+    .workspace {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 360px 1fr;
+      max-width: 1440px;
+      width: 100%;
+      margin: 0 auto;
+      border-left: 1px solid var(--border);
+      border-right: 1px solid var(--border);
+      background-color: var(--sidebar);
+    }
+
+    @media (max-width: 900px) {
+      .workspace {
+        grid-template-columns: 1fr;
+        border: none;
+      }
+    }
+
+    /* Left Sidebar: Knowledge Base */
+    .sidebar-panel {
+      padding: 1.5rem;
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+      background-color: var(--sidebar);
+    }
+
+    .panel-meta {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .panel-label {
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-subtle);
+      font-family: var(--font-mono);
+    }
+
+    .doc-counter {
+      font-size: 0.75rem;
+      color: var(--text-dim);
+      font-family: var(--font-mono);
+    }
+
+    /* Dropzone Upload */
+    .dropzone {
+      border: 1px dashed var(--border-focus);
+      background-color: var(--card);
+      border-radius: 8px;
+      padding: 1.25rem 1rem;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color 0.15s, background-color 0.15s;
+      position: relative;
+    }
+
+    .dropzone:hover, .dropzone.dragover {
+      border-color: #64748b;
+      background-color: var(--card-hover);
+    }
+
+    .dropzone-icon {
+      margin-bottom: 0.5rem;
+      color: var(--text-dim);
+    }
+
+    .dropzone-text {
+      font-size: 0.825rem;
+      color: var(--text-main);
+      font-weight: 500;
+    }
+
+    .dropzone-hint {
+      font-size: 0.725rem;
+      color: var(--text-subtle);
+      margin-top: 0.25rem;
+    }
+
+    input[type="file"] {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      opacity: 0;
+      cursor: pointer;
+    }
+
+    .upload-btn {
+      width: 100%;
+      background-color: var(--primary-btn);
+      color: var(--text-main);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 0.6rem 1rem;
+      font-size: 0.85rem;
+      font-weight: 500;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      transition: background-color 0.15s, border-color 0.15s;
+    }
+
+    .upload-btn:hover:not(:disabled) {
+      background-color: var(--primary-btn-hover);
+      border-color: var(--border-focus);
+    }
+
+    .upload-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    /* Toast Alert */
+    .alert {
+      padding: 0.65rem 0.85rem;
+      border-radius: 6px;
+      font-size: 0.8rem;
+      display: none;
+      border-left: 3px solid;
+    }
+
+    .alert-error {
+      background-color: var(--danger-dim);
+      border-color: var(--danger);
+      color: #fca5a5;
+    }
+
+    .alert-success {
+      background-color: var(--accent-dim);
+      border-color: var(--accent);
+      color: #86efac;
+    }
+
+    /* Document List */
+    .doc-list-container {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .doc-list {
+      list-style: none;
+      overflow-y: auto;
+      max-height: 480px;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      padding-right: 0.25rem;
+    }
+
+    .doc-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.65rem 0.75rem;
+      background-color: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      transition: border-color 0.15s;
+    }
+
+    .doc-item:hover {
+      border-color: var(--border-focus);
+    }
+
+    .doc-details {
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+      overflow: hidden;
+      margin-right: 0.5rem;
+    }
+
+    .doc-name {
+      font-size: 0.825rem;
+      font-family: var(--font-mono);
+      color: var(--text-main);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .doc-sub {
+      font-size: 0.7rem;
+      color: var(--text-subtle);
+      font-family: var(--font-mono);
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .chunk-pill {
+      background-color: rgba(255, 255, 255, 0.04);
+      padding: 0.05rem 0.35rem;
+      border-radius: 3px;
+      border: 1px solid var(--border);
+    }
+
+    .btn-delete {
+      background: transparent;
+      border: none;
+      color: var(--text-subtle);
+      padding: 0.35rem;
+      border-radius: 4px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: color 0.15s, background-color 0.15s;
+    }
+
+    .btn-delete:hover {
+      color: var(--danger);
+      background-color: var(--danger-dim);
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 2.5rem 1rem;
+      color: var(--text-subtle);
+      font-size: 0.8rem;
+      border: 1px dashed var(--border);
+      border-radius: 6px;
+      line-height: 1.5;
+    }
+
+    /* Right Main Console: Query & Answer */
+    .console-panel {
+      padding: 2rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+      background-color: var(--bg);
+    }
+
+    .query-card {
+      background-color: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      transition: border-color 0.15s;
+    }
+
+    .query-card:focus-within {
+      border-color: var(--border-focus);
+    }
+
+    textarea {
+      width: 100%;
+      min-height: 95px;
+      padding: 1rem;
+      background: transparent;
+      border: none;
+      color: var(--text-main);
+      font-family: var(--font-sans);
+      font-size: 0.925rem;
+      resize: vertical;
+      line-height: 1.5;
+      outline: none;
+    }
+
+    textarea::placeholder {
+      color: var(--text-subtle);
+    }
+
+    .query-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.5rem 0.85rem;
+      border-top: 1px solid var(--border);
+      background-color: rgba(0, 0, 0, 0.15);
+    }
+
+    .shortcut-hint {
+      font-size: 0.725rem;
+      color: var(--text-subtle);
+      font-family: var(--font-mono);
+    }
+
+    .btn-ask {
+      background-color: #3b82f6;
+      color: #ffffff;
+      border: none;
+      border-radius: 5px;
+      padding: 0.45rem 1rem;
+      font-size: 0.825rem;
+      font-weight: 500;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      transition: background-color 0.15s;
+    }
+
+    .btn-ask:hover:not(:disabled) {
+      background-color: #2563eb;
+    }
+
+    .btn-ask:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    /* Answer View */
+    .result-container {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background-color: var(--card);
+      overflow: hidden;
+      min-height: 320px;
+    }
+
+    .result-header {
+      padding: 0.75rem 1.25rem;
+      border-bottom: 1px solid var(--border);
+      background-color: rgba(0, 0, 0, 0.12);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .result-title {
+      font-size: 0.75rem;
+      font-family: var(--font-mono);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-subtle);
+    }
+
+    .response-body {
+      padding: 1.25rem;
+      color: var(--text-main);
+      font-size: 0.925rem;
+      line-height: 1.65;
+      flex: 1;
+      white-space: pre-wrap;
+    }
+
+    .sources-box {
+      border-top: 1px solid var(--border);
+      padding: 0.85rem 1.25rem;
+      background-color: rgba(0, 0, 0, 0.1);
+      display: none;
+    }
+
+    .sources-title {
+      font-size: 0.725rem;
+      color: var(--text-subtle);
+      font-family: var(--font-mono);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 0.5rem;
+    }
+
+    .sources-pills {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+    }
+
+    .source-pill {
+      font-family: var(--font-mono);
+      font-size: 0.725rem;
+      background: var(--sidebar);
+      color: #93c5fd;
+      padding: 0.2rem 0.55rem;
+      border-radius: 4px;
+      border: 1px solid #1e3a5f;
+    }
+
+    /* Minimal Spinner */
+    .spinner {
+      width: 12px;
+      height: 12px;
+      border: 2px solid rgba(255, 255, 255, 0.2);
+      border-top-color: #ffffff;
+      border-radius: 50%;
+      animation: spin 0.6s linear infinite;
+      display: inline-block;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="brand">
+      <div class="brand-icon">D</div>
+      <span class="brand-title">DocuMind</span>
+      <span class="brand-version">v1.0</span>
+    </div>
+    <div class="header-status">
+      <span class="status-dot"></span>
+      <span>chromadb: active</span>
+    </div>
+  </header>
+
+  <div class="workspace">
+    <!-- Left Column: Knowledge Base -->
+    <aside class="sidebar-panel">
+      <div class="panel-meta">
+        <span class="panel-label">Document Store</span>
+        <span id="docCounter" class="doc-counter">0 files</span>
+      </div>
+
+      <div class="dropzone" id="dropArea">
+        <svg class="dropzone-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+          <polyline points="17 8 12 3 7 8"/>
+          <line x1="12" y1="3" x2="12" y2="15"/>
+        </svg>
+        <div id="dropFileName" class="dropzone-text">Drop PDF or TXT here</div>
+        <div class="dropzone-hint">or click to browse files</div>
+        <input type="file" id="fileInput" accept=".pdf,.txt">
+      </div>
+
+      <button id="uploadBtn" class="upload-btn" onclick="handleUpload()">
+        <span id="uploadSpinner" class="spinner" style="display: none;"></span>
+        <span id="uploadBtnText">Index Document</span>
+      </button>
+
+      <div id="alertBox" class="alert"></div>
+
+      <div class="doc-list-container">
+        <div class="panel-meta" style="margin-bottom: 0.6rem;">
+          <span class="panel-label">Indexed Corpus</span>
+        </div>
+        <ul id="docList" class="doc-list">
+          <div class="empty-state">No documents indexed yet.<br>Upload a .pdf or .txt file to begin.</div>
+        </ul>
+      </div>
+    </aside>
+
+    <!-- Right Column: Query & Response -->
+    <main class="console-panel">
+      <div class="query-card">
+        <textarea id="questionInput" placeholder="Ask a question based on your indexed documents..."></textarea>
+        <div class="query-toolbar">
+          <span class="shortcut-hint">⌘ + Enter to submit</span>
+          <button id="askBtn" class="btn-ask" onclick="handleAsk()">
+            <span id="askSpinner" class="spinner" style="display: none;"></span>
+            <span id="askBtnText">Query</span>
+          </button>
+        </div>
+      </div>
+
+      <section class="result-container">
+        <div class="result-header">
+          <span class="result-title">Response</span>
+          <span id="statusIndicator" class="shortcut-hint">Ready</span>
+        </div>
+        <div id="responseBody" class="response-body">Enter a prompt above to search the document database.</div>
+
+        <div id="sourcesBox" class="sources-box">
+          <div class="sources-title">Referenced Sources</div>
+          <div id="sourcesList" class="sources-pills"></div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    // File input selection feedback
+    const fileInput = document.getElementById("fileInput");
+    const dropFileName = document.getElementById("dropFileName");
+    fileInput.addEventListener("change", () => {
+      if (fileInput.files.length > 0) {
+        dropFileName.textContent = fileInput.files[0].name;
+      } else {
+        dropFileName.textContent = "Drop PDF or TXT here";
+      }
+    });
+
+    function showAlert(msg, type = "error") {
+      const box = document.getElementById("alertBox");
+      box.textContent = msg;
+      box.className = `alert alert-${type}`;
+      box.style.display = "block";
+      setTimeout(() => {
+        box.style.display = "none";
+      }, 5000);
+    }
+
+    async function loadDocuments() {
+      const listEl = document.getElementById("docList");
+      const counterEl = document.getElementById("docCounter");
+      try {
+        const res = await fetch("/api/documents");
+        if (!res.ok) throw new Error("Failed to load documents");
+        const docs = await res.json();
+
+        if (counterEl) {
+          counterEl.textContent = `${docs.length} file${docs.length === 1 ? '' : 's'}`;
+        }
+
+        if (docs.length === 0) {
+          listEl.innerHTML = '<div class="empty-state">No documents indexed yet.<br>Upload a .pdf or .txt file to begin.</div>';
+          return;
+        }
+
+        listEl.innerHTML = docs.map(doc => `
+          <li class="doc-item">
+            <div class="doc-details" title="${doc.filename}">
+              <span class="doc-name">${doc.filename}</span>
+              <div class="doc-sub">
+                <span class="chunk-pill">${doc.chunks} chunk${doc.chunks === 1 ? '' : 's'}</span>
+              </div>
+            </div>
+            <button class="btn-delete" title="Delete document" onclick="handleDelete('${doc.doc_id}')">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="3 6 5 6 21 6"/>
+                <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+                <path d="M10 11v6"/>
+                <path d="M14 11v6"/>
+              </svg>
+            </button>
+          </li>
+        `).join("");
+      } catch (err) {
+        listEl.innerHTML = `<div class="empty-state" style="color: var(--danger)">Connection error: ${err.message}</div>`;
+      }
+    }
+
+    async function handleUpload() {
+      const file = fileInput.files[0];
+      if (!file) {
+        showAlert("Please select a .pdf or .txt file first.");
+        return;
+      }
+
+      const uploadBtn = document.getElementById("uploadBtn");
+      const uploadSpinner = document.getElementById("uploadSpinner");
+      const uploadBtnText = document.getElementById("uploadBtnText");
+
+      uploadBtn.disabled = true;
+      uploadSpinner.style.display = "inline-block";
+      uploadBtnText.textContent = "Indexing...";
+
+      const formData = new FormData();
+      formData.append("file", file);
+
+      try {
+        const res = await fetch("/api/upload", {
+          method: "POST",
+          body: formData
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          throw new Error(data.detail || "Upload failed");
+        }
+        showAlert(`Indexed: ${data.filename} (${data.chunks} chunks)`, "success");
+        fileInput.value = "";
+        dropFileName.textContent = "Drop PDF or TXT here";
+        await loadDocuments();
+      } catch (err) {
+        showAlert(err.message, "error");
+      } finally {
+        uploadBtn.disabled = false;
+        uploadSpinner.style.display = "none";
+        uploadBtnText.textContent = "Index Document";
+      }
+    }
+
+    async function handleDelete(docId) {
+      if (!confirm("Delete this document and purge its vector embeddings?")) {
+        return;
+      }
+      try {
+        const res = await fetch(`/api/documents/${docId}`, { method: "DELETE" });
+        if (!res.ok) {
+          const data = await res.json();
+          throw new Error(data.detail || "Delete failed");
+        }
+        showAlert("Document purged from index", "success");
+        await loadDocuments();
+      } catch (err) {
+        showAlert(err.message, "error");
+      }
+    }
+
+    async function handleAsk() {
+      const input = document.getElementById("questionInput");
+      const question = input.value.trim();
+      if (!question) {
+        showAlert("Please enter a question to query.");
+        return;
+      }
+
+      const askBtn = document.getElementById("askBtn");
+      const askSpinner = document.getElementById("askSpinner");
+      const askBtnText = document.getElementById("askBtnText");
+      const responseBody = document.getElementById("responseBody");
+      const sourcesBox = document.getElementById("sourcesBox");
+      const sourcesList = document.getElementById("sourcesList");
+      const statusIndicator = document.getElementById("statusIndicator");
+
+      askBtn.disabled = true;
+      askSpinner.style.display = "inline-block";
+      askBtnText.textContent = "Searching...";
+      responseBody.textContent = "Retrieving relevant context and synthesizing answer...";
+      if (statusIndicator) statusIndicator.textContent = "Embedding & Retrieving...";
+      sourcesBox.style.display = "none";
+
+      try {
+        const res = await fetch("/api/ask", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ question })
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          throw new Error(data.detail || "Query failed");
+        }
+
+        responseBody.textContent = data.answer || "No response received.";
+        if (statusIndicator) statusIndicator.textContent = "Done";
+
+        if (data.sources && data.sources.length > 0) {
+          sourcesList.innerHTML = data.sources.map(s => `<span class="source-pill">${s}</span>`).join("");
+          sourcesBox.style.display = "block";
+        } else {
+          sourcesBox.style.display = "none";
+        }
+      } catch (err) {
+        responseBody.textContent = `Error: ${err.message}`;
+        if (statusIndicator) statusIndicator.textContent = "Failed";
+        sourcesBox.style.display = "none";
+      } finally {
+        askBtn.disabled = false;
+        askSpinner.style.display = "none";
+        askBtnText.textContent = "Query";
+      }
+    }
+
+    // Enter + Cmd/Ctrl to submit question
+    document.getElementById("questionInput").addEventListener("keydown", (e) => {
+      if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+        e.preventDefault();
+        handleAsk();
+      }
+    });
+
+    window.addEventListener("DOMContentLoaded", loadDocuments);
+  </script>
+</body>
+</html>

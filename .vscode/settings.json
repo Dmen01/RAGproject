@@ -1,0 +1,6 @@
+{
+  "python.defaultInterpreterPath": "${workspaceFolder}/rag-app/.venv/bin/python",
+  "python.analysis.extraPaths": [
+    "${workspaceFolder}/rag-app"
+  ]
+}
